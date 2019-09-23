@@ -25,8 +25,8 @@ class ImageData:
 
         return img
 
-def load_test_data(image_path, size=256):
-    img = cv2.imread(image_path, flags=cv2.IMREAD_COLOR)
+def load_test_data(img, size=256):
+    #img = cv2.imread(image_path, flags=cv2.IMREAD_COLOR)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
 
     img = cv2.resize(img, dsize=(size, size))
@@ -44,18 +44,19 @@ def augmentation(image, augment_size):
     image = tf.random_crop(image, ori_image_shape, seed=seed)
     return image
 
-def save_images(images, size, image_path):
-    return imsave(inverse_transform(images), size, image_path)
+def save_images(images, size):
+    return imsave(inverse_transform(images), size)
 
 def inverse_transform(images):
     return ((images+1.) / 2) * 255.0
 
 
-def imsave(images, size, path):
+def imsave(images, size):
     images = merge(images, size)
     images = cv2.cvtColor(images.astype('uint8'), cv2.COLOR_RGB2BGR)
 
-    return cv2.imwrite(path, images)
+    return images
+    #return cv2.imwrite(path, images)
 
 def merge(images, size):
     h, w = images.shape[1], images.shape[2]

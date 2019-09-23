@@ -7,9 +7,9 @@ from utils import *
 def parse_args():
     desc = "Tensorflow implementation of U-GAT-IT"
     parser = argparse.ArgumentParser(description=desc)
-    parser.add_argument('--phase', type=str, default='train', help='[train / test]')
+    parser.add_argument('--phase', type=str, default='test', help='[train / test]')
     parser.add_argument('--light', type=str2bool, default=False, help='[U-GAT-IT full version / U-GAT-IT light version]')
-    parser.add_argument('--dataset', type=str, default='selfie2anime', help='dataset_name')
+    parser.add_argument('--dataset', type=str, default='img', help='dataset_name')
 
     parser.add_argument('--epoch', type=int, default=100, help='The number of epochs to run')
     parser.add_argument('--iteration', type=int, default=10000, help='The number of training iterations')
@@ -85,7 +85,7 @@ def main():
       exit()
 
     # open session
-    with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as sess:
+    with tf.Session(config=tf.ConfigProto(allow_soft_placement=False)) as sess:
         gan = UGATIT(sess, args)
 
         # build graph
@@ -93,14 +93,9 @@ def main():
 
         # show network architecture
         show_all_variables()
-
-        if args.phase == 'train' :
-            gan.train()
-            print(" [*] Training finished!")
-
+        
         if args.phase == 'test' :
             gan.test()
-            print(" [*] Test finished!")
 
 if __name__ == '__main__':
     main()

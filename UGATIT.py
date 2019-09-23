@@ -598,8 +598,7 @@ class UGATIT(object) :
 
     def load(self, checkpoint_dir):
         print(" [*] Reading checkpoints...")
-        checkpoint_dir = os.path.join(checkpoint_dir, self.model_dir)
-
+        checkpoint_dir='checkpoint/UGATIT_selfie2anime_lsgan_4resblock_6dis_1_1_10_10_1000_sn_smoothing'
         ckpt = tf.train.get_checkpoint_state(checkpoint_dir)
         if ckpt and ckpt.model_checkpoint_path:
             ckpt_name = os.path.basename(ckpt.model_checkpoint_path)
@@ -613,53 +612,40 @@ class UGATIT(object) :
 
     def test(self):
         tf.global_variables_initializer().run()
-        test_A_files = glob('./dataset/{}/*.*'.format(self.dataset_name + '/testA'))
-        test_B_files = glob('./dataset/{}/*.*'.format(self.dataset_name + '/testB'))
-
         self.saver = tf.train.Saver()
         could_load, checkpoint_counter = self.load(self.checkpoint_dir)
-        self.result_dir = os.path.join(self.result_dir, self.model_dir)
-        check_folder(self.result_dir)
 
         if could_load :
             print(" [*] Load SUCCESS")
         else :
             print(" [!] Load failed...")
+            import sys
+            sys.exit()
 
-        # write html for visual comparison
-        index_path = os.path.join(self.result_dir, 'index.html')
-        index = open(index_path, 'w')
-        index.write("<html><body><table><tr>")
-        index.write("<th>name</th><th>input</th><th>output</th></tr>")
+        cap=cv2.VideoCapture(0)
+        
 
-        for sample_file  in test_A_files : # A -> B
-            print('Processing A image: ' + sample_file)
-            sample_image = np.asarray(load_test_data(sample_file, size=self.img_size))
-            image_path = os.path.join(self.result_dir,'{0}'.format(os.path.basename(sample_file)))
+        while True:
+            ret, frame = cap.read()
+            if not frame is None:
+                height, width, channels = frame.shape[:3]
+                frame = frame[0:height,(width-height)//2-1:(width-height)//2+height-1]
+                frame = cv2.flip(frame, 1) #x軸反転
+                cv2.namedWindow('real', cv2.WINDOW_NORMAL)
+                cv2.imshow('real', frame)
+                sample_image = np.asarray(load_test_data(frame, size=self.img_size))
+                fake_img = self.sess.run(self.test_fake_B, feed_dict = {self.test_domain_A : sample_image})
+                img=save_images(fake_img, [1, 1])
+                cv2.namedWindow('anime', cv2.WINDOW_NORMAL)
+                # cv2.setWindowProperty('anime', cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                cv2.imshow('anime',img)
+                key = cv2.waitKey(1)
+                if key == ord('q'):
+                    break
+                elif key == ord('s'):
+                    real = cv2.resize(frame, (256, 256))
+                    cv2.imwrite('outputs/real/{:0=4}.jpg'.format(len(os.listdir('outputs/real'))),real)
+                    cv2.imwrite('outputs/anime/{:0=4}.jpg'.format(len(os.listdir('outputs/anime'))),img)
+                    mix = cv2.hconcat([real[0:255, 0:127], img[0:255, 128:255]])
+                    cv2.imwrite('outputs/mix/{:0=4}.jpg'.format(len(os.listdir('outputs/mix'))),mix)
 
-            fake_img = self.sess.run(self.test_fake_B, feed_dict = {self.test_domain_A : sample_image})
-            save_images(fake_img, [1, 1], image_path)
-
-            index.write("<td>%s</td>" % os.path.basename(image_path))
-
-            index.write("<td><img src='%s' width='%d' height='%d'></td>" % (sample_file if os.path.isabs(sample_file) else (
-                '../..' + os.path.sep + sample_file), self.img_size, self.img_size))
-            index.write("<td><img src='%s' width='%d' height='%d'></td>" % (image_path if os.path.isabs(image_path) else (
-                '../..' + os.path.sep + image_path), self.img_size, self.img_size))
-            index.write("</tr>")
-
-        for sample_file  in test_B_files : # B -> A
-            print('Processing B image: ' + sample_file)
-            sample_image = np.asarray(load_test_data(sample_file, size=self.img_size))
-            image_path = os.path.join(self.result_dir,'{0}'.format(os.path.basename(sample_file)))
-
-            fake_img = self.sess.run(self.test_fake_A, feed_dict = {self.test_domain_B : sample_image})
-
-            save_images(fake_img, [1, 1], image_path)
-            index.write("<td>%s</td>" % os.path.basename(image_path))
-            index.write("<td><img src='%s' width='%d' height='%d'></td>" % (sample_file if os.path.isabs(sample_file) else (
-                    '../..' + os.path.sep + sample_file), self.img_size, self.img_size))
-            index.write("<td><img src='%s' width='%d' height='%d'></td>" % (image_path if os.path.isabs(image_path) else (
-                    '../..' + os.path.sep + image_path), self.img_size, self.img_size))
-            index.write("</tr>")
-        index.close()
