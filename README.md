@@ -58,7 +58,7 @@ The results of the paper came from the **Tensorflow code**
 
 ### Test
 ```
-> python main.py --dataset selfie2anime --phase test
+> python main.py
 ```
 
 ## Architecture
